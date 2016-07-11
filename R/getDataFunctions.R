@@ -33,7 +33,7 @@ createCohort <- function(connection, connectionDetails, cdm_schema, target_schem
 }
 
 #'
-getCohort <- function(connectionDetails, cdm_schema, target_schema, target_table){
+getCohort <- function(connection, connectionDetails, cdm_schema, target_schema, target_table){
     # pathToSql <- system.file(paste("sql/", gsub(" ", "_", connectionDetails$dbms),
     #                                sep = ""), "getCohort_parameterized.sql", package = "DrugAnalysis")
     # print(pathToSql)
@@ -51,7 +51,6 @@ getCohort <- function(connectionDetails, cdm_schema, target_schema, target_table
                      target_schema = target_schema,
                      target_table = target_table)
 
-    connection <- connect(connectionDetails)
     result_df <- querySql(connection, sql)
 
     ## Translations from index to names
@@ -98,24 +97,24 @@ getHistory_ <- function( type, concept_ids, connectionDetails,
   # Parse the concept codes and choose sql file
   if ( type== 'condition' ){
     concept_ids_string <- paste(concept_ids,collapse = ",")
-    sql <- readSql("sql/history_condition_parameterized.sql")
+    sql_file_name <- "history_condition_parameterized.sql"
 
   } else if ( type == 'procedure' ){
     concept_ids_string <- paste(concept_ids,collapse = ",")
-    sql <- readSql("sql/history_procedure_parameterized.sql")
+    sql_file_name <- "history_procedure_parameterized.sql"
 
   } else if ( type == 'drug' ){
     atc_codes_string <- paste( concept_ids, collapse = "' OR atc.concept_code LIKE '" )
     concept_ids_string <- paste( "(atc.concept_code LIKE '",atc_codes_string,"')", sep="" )
-    sql <- readSql("sql/history_drug_parameterized.sql")
+    sql_file_name <- "history_drug_parameterized.sql"
   }
 
-  sql <- renderSql(sql,
-                   cdm_schema = connectionDetails$schema,
-                   target_schema = target_schema,
-                   target_table = target_table,
-                   concept_ids = concept_ids_string)$sql
-  sql <- translateSql(sql, targetDialect = connectionDetails$dbms)$sql
+  sql <- loadRenderTranslateSql2(sql_file_name,"OHDSIDeriveVariables",
+                                 dbms = connectionDetails$dbms,
+                                 cdm_schema = connectionDetails$schema,
+                                 target_schema = target_schema,
+                                 target_table = target_table,
+                                 concept_ids = concept_ids_string)
 
   connection <- connect(connectionDetails)
   result_df <- querySql(connection, sql)
@@ -147,13 +146,12 @@ getAtIndexDrugBool_byATC <- function(atcCodes, connectionDetails, cohortDatabase
     atc_codes_string <- paste( "(atc.concept_code LIKE '",atc_codes_string,"')", sep="" )
   }
 
-  sql <- readSql("sql/new_drug_parameterized.sql")
-  sql <- renderSql(sql,
-                   cdm_schema = connectionDetails$schema,
-                   target_schema = cohortDatabaseSchema,
-                   target_table = cohortTableName,
-                   where_clause = atc_codes_string)$sql
-  sql <- translateSql(sql, targetDialect = connectionDetails$dbms)$sql
+  sql <- loadRenderTranslateSql2("new_drug_parameterized.sql","OHDSIDeriveVariables",
+                                 dbms = connectionDetails$dbms,
+                                 cdm_schema = connectionDetails$schema,
+                                 target_schema = cohortDatabaseSchema,
+                                 target_table = cohortTableName,
+                                 where_clause = atc_codes_string)
 
   connection <- connect(connectionDetails)
   result_df <- querySql(connection, sql)
@@ -170,7 +168,7 @@ getDaysAtRisk_ <- function(type, concept_ids, connectionDetails, target_schema, 
      cause_ids_string <- paste(concept_ids, collapse = ",")
      where_string <- paste("(cause_concept_id IN (",cause_ids_string,
                                ") OR value_as_concept_id IN (",cause_ids_string,") )", sep="")
-     sql <- readSql("sql/days_at_risk_death_parameterized.sql")
+     sql_file_name <- "days_at_risk_death_parameterized.sql"
 
   } else if (type == 'condition') {
     concept_ids_string <- paste(concept_ids, collapse = ",")
@@ -178,7 +176,7 @@ getDaysAtRisk_ <- function(type, concept_ids, connectionDetails, target_schema, 
     # Not a Secondary condition (Primary and first place condition are allowed)
     where_string <- paste("condition_concept_id IN (", concept_ids_string,
                          ") AND condition_type_concept_id != 44786629", sep="")
-    sql <- readSql("sql/days_at_risk_condition_parameterized.sql")
+    sql_file_name <- "days_at_risk_condition_parameterized.sql"
 
   } else {
     printf("%s days at risk is not supported", type)
@@ -191,15 +189,15 @@ getDaysAtRisk_ <- function(type, concept_ids, connectionDetails, target_schema, 
     where_string <- "True"
   }
 
+  sql <- loadRenderTranslateSql2(sql_file_name,"OHDSIDeriveVariables",
+                                 dbms = connectionDetails$dbms,
+                                 cdm_schema = connectionDetails$schema,
+                                 target_schema = target_schema,
+                                 target_table = target_table,
+                                 where_clause = where_string,
+                                 days_correction = days_correction,
+                                 study_end_date = study_end_yyyymmdd)
 
-  sql <- renderSql(sql,
-                   cdm_schema = connectionDetails$schema,
-                   target_schema = target_schema,
-                   target_table = target_table,
-                   where_clause = where_string,
-                   days_correction = days_correction,
-                   study_end_date = study_end_yyyymmdd)$sql
-  sql <- translateSql(sql, targetDialect = connectionDetails$dbms)$sq
   connection <- connect(connectionDetails)
 
   result_df <- querySql(connection, sql)

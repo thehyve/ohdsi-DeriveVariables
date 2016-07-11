@@ -3,9 +3,10 @@ library("devtools")
 install_github("ohdsi/OhdsiRTools")
 install_github("ohdsi/SqlRender")
 install_github("ohdsi/DatabaseConnector")
-install_github("")
+install_github("thehyve/ohdsi-DeriveVariables")
 
 # If all was succesfull, the following should load the package
+library("SqlRender")
 library("OHDSIDeriveVariables")
 
 cdmDatabaseSchema <- 'cdm5'
@@ -22,5 +23,5 @@ connectionDetails <- createConnectionDetails(dbms="postgresql",
 connection <- connect(connectionDetails)
 createCohort(connection, connectionDetails, cdmDatabaseSchema, cohortDatabaseSchema, cohortTableName)
 
-cohort <- getCohort(connectionDetails, cdmDatabaseSchema, cohortDatabaseSchema, cohortTableName)
+cohort <- getCohort(connection, connectionDetails, cdmDatabaseSchema, cohortDatabaseSchema, cohortTableName)
 View(cohort)
