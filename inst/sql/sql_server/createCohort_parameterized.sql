@@ -2,7 +2,7 @@
 Writes studypopulation to the relation study.masterfile
 TODO: this is a slow procedure. Lot of calculations. Use EXPLAIN to find a way to speed things up.
 */
-drop schema @target_schema cascade;
+drop schema if exists @target_schema cascade;
 CREATE SCHEMA @target_schema;
 
 WITH condition_start AS (
