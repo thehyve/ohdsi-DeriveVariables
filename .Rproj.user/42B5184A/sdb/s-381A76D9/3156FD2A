@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "install.packages(\"devtools\")\nlibrary(\"devtools\")\ninstall_github(\"ohdsi/OhdsiRTools\")\ninstall_github(\"ohdsi/SqlRender\")\ninstall_github(\"ohdsi/DatabaseConnector\")\ninstall_github(\"\")\n\n# If all was succesfull, the following should load the package\nlibrary(\"OHDSIDeriveVariables\")\n\ncdmDatabaseSchema <- 'cdm5'\n# New schema that is made when executing study cohort creation\ncohortDatabaseSchema <- 'study'\ncohortTableName <- 'masterfile'\n############# ################\n\nconnectionDetails <- createConnectionDetails(dbms=\"postgresql\",\n                                             server=\"localhost/ohdsi\",\n                                             user=\"postgres\", password=\"\",\n                                             port=5432,\n                                             schema=cdmDatabaseSchema)\nconnection <- connect(connectionDetails)\ncreateCohort(connection, connectionDetails, cdmDatabaseSchema, cohortDatabaseSchema, cohortTableName)\n\ncohort <- getCohort(connectionDetails, cdmDatabaseSchema, cohortDatabaseSchema, cohortTableName)\nView(cohort)\n",
+    "created" : 1468236343480.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3482850489",
+    "id" : "3156FD2A",
+    "lastKnownWriteTime" : 1468236929,
+    "last_content_update" : 1468236929077,
+    "path" : "~/Documents/OHDSIDeriveVariables/tests/create_get_cohort.R",
+    "project_path" : "tests/create_get_cohort.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 5,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

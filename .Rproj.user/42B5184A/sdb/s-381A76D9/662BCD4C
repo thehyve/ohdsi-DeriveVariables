@@ -1,0 +1,20 @@
+{
+    "collab_server" : "",
+    "contents" : "Package: OHDSIDeriveVariables\nType: Package\nTitle: What the Package Does (Title Case)\nVersion: 0.1.0\nAuthor: Maxim Moinat\nMaintainer: Who to complain to <yourfault@somewhere.net>\nDescription: More about what it does (maybe more than one line)\nImports:\n    SqlRender (>= 1.1.3),\n    OhdsiRTools,\n    RJDBC,\n    rmarkdown\nDepends:\n    R (>= 3.2.2),\n    DatabaseConnector (>= 1.4.0)\nLicense: What license is it under?\nLazyData: TRUE\n",
+    "created" : 1468236199064.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3680049428",
+    "id" : "662BCD4C",
+    "lastKnownWriteTime" : 1468236283,
+    "last_content_update" : 1468236283215,
+    "path" : "~/Documents/OHDSIDeriveVariables/DESCRIPTION",
+    "project_path" : "DESCRIPTION",
+    "properties" : {
+    },
+    "relative_order" : 5,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "dcf"
+}
