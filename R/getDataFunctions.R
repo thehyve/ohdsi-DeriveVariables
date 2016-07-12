@@ -1,32 +1,6 @@
 # Simple wrapper for easy formatted printing to screen. outer invisible may be unnecessary (http://stackoverflow.com/questions/13023274/how-to-do-printf-in-r)
 printf <- function(...) invisible(print(sprintf(...)))
 
-createCohort <- function(connection, connectionDetails, cdm_schema, target_schema, target_table){
-
-  # Input the ids
-  riva_ids <- c(40244445,40241331,40241332,40241333,40244446,40244447,40244443,40241334,40244448,40241335,40244444,40244449,40241337,40241336,40244450)
-  warf_ids <- c(44663115,44556166,44562589,44621649,44643120,40163553,44557985,40163549,44547357,44581120,44611173,40163535,44604212,44605858,44645771,44678256,40163537,40163528,44580621,44579352,40163560,44560351,40163539,44549319,44561018,44611705,44578601,40163519,44611547,44587179,44663782,44674155,44618390,44607893,44644567,40163550,44549318,44655361,44679336,40163534,44674600,44586763,44662517,40163511,44653078,44599599,44643067,44632766,40163554,44632290,40163564,40163514,44610278,40093134,40163567,44642416,44627226,40163507,40093131,40163558,44552268,40163518,44559160,44670738,40121983,40163527,44571574,40163559,40163536,40121984,44604248,44647604,44667136,44616988,40163523,44645391,40163525,40163515,40163520,40163517,40163557,44604598,44556575,44631436,44644475,44657905,44630908,40163569,44667448,40163551,44635583,44622848,44622849,40163533,40163555,44547738,40163547,40163566,40163516,44626965,40163532,40163568,40163548,44667174,44612008,44579230,40163565,40093132,44617776,44631830,44601988,44647884,44662478,44603265,40163570,40163552,44574108,40163541,40163513,44545243,44551746,40163561,44563518,40163530,40093130,44560746,44622752,40163543,44605424,44614948,44650425,44570203,44617269,40163529,44583471,44676840,40163509,44605024,44622055,44611706,1310149,40163531,44665175,44665051,40163526,40163512,40163563,40163562,44677342,40163524,40163556,44556574,40163522,40163542,44674154,40163546,44672367,44595885,40163538,44607132,44578361,44643066,40163510,40163508,44658031,44589399,44611597,44562846,44548797,44602298,40163521,40163540,40093133,44616175,44546930,40163544,44563271,44548604,44587502,44550692,44656985,44569040,40163545,44637417,44625675,44626589)
-  phen_ids <- c(19035344,40078200,19079272,19081825)
-  dabi_ids <- c(40228152)
-  apix_ids <- c(43013024)
-
-  sql <- loadRenderTranslateSql2("createCohort_parameterized.sql","OHDSIDeriveVariables",
-                                cdm_schema = cdm_schema,
-                                dbms = connectionDetails$dbms,
-                                target_schema = target_schema,
-                                target_table = target_table,
-                                study_start_yyyymmdd = '20111201',
-                                study_end_yyyymmdd = '20141231',
-                                riva_ids = paste(riva_ids,collapse=","),
-                                warf_ids = paste(warf_ids,collapse=","),
-                                phen_ids = paste(phen_ids,collapse=","),
-                                dabi_ids = paste(dabi_ids,collapse=","),
-                                apix_ids = paste(apix_ids,collapse=",")
-                                )
-
-  executeSql(connection, sql)
-}
-
 #'
 getCohort <- function(connectionDetails, cdm_schema, target_schema, target_table){
     # pathToSql <- system.file(paste("sql/", gsub(" ", "_", connectionDetails$dbms),
@@ -119,7 +93,7 @@ getHistory_ <- function( type, concept_ids, connectionDetails,
   return( result_df$CONCEPT_HISTORY )
 }
 
-getPriorConditionBool <- function( concept_ids, connectionDetails, target_schema, target_table ){
+getConditionHistory <- function( concept_ids, connectionDetails, target_schema, target_table ){
   return ( getHistory_('condition', concept_ids, connectionDetails, target_schema, target_table ) )
 }
 
@@ -127,12 +101,14 @@ getProcedureHistory <- function( concept_ids, connectionDetails, target_schema, 
   return ( getHistory_('procedure', concept_ids, connectionDetails, target_schema, target_table ) )
 }
 
-getPriorDrugBool_byATC <- function( atcCodes, connectionDetails, target_schema, target_table ) {
+getDrugHistoryByATC <- function( atcCodes, connectionDetails, target_schema, target_table ) {
   return ( getHistory_('drug', atcCodes, connectionDetails, target_schema, target_table ) )
 }
 
-getAtIndexDrugBool_byATC <- function(atcCodes, connectionDetails, cohortDatabaseSchema, cohortTableName, useIn = FALSE) {
-  # Only set useIn to true if this gives a performance boost.
+#' Retrieve drug at index. Drug is used at index if it is used 30 days after index,
+#' but not in the year before.
+#' Only set useIn to true if this gives a performance boost.
+getDrugAtIndexByATC <- function(atcCodes, connectionDetails, cohortDatabaseSchema, cohortTableName, useIn = FALSE) {
   # Parse the atc codes
   if (useIn){
     atc_codes_string <- paste(atcCodes,collapse = "','")
@@ -217,7 +193,7 @@ getConditionConcomitant <- function(condition_ids, connectionDetails, target_sch
     ## Implementation using exiting functions instead of new sql
 
     # Get all histories of this condition
-    occurrenceBeforeIndex <- getPriorConditionBool(condition_ids, connectionDetails, target_schema, target_table)
+    occurrenceBeforeIndex <- getConditionHistory(condition_ids, connectionDetails, target_schema, target_table)
 
     # Get all after index of this condition
     conditionRisk <- getConditionDaysAtRisk(condition_ids, connectionDetails, target_schema, target_table,
