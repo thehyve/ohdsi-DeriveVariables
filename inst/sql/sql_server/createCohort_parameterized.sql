@@ -1,8 +1,7 @@
 /*
 Writes studypopulation to the relation study.masterfile
-TODO: this is a slow procedure. Lot of calculations. Use EXPLAIN to find a way to speed things up.
 */
-drop schema if exists @target_schema cascade;
+DROP SCHEMA IF EXISTS @target_schema cascade;
 CREATE SCHEMA @target_schema;
 
 WITH condition_start AS (
@@ -18,7 +17,7 @@ WITH condition_start AS (
     riva_start AS (
     SELECT person_id, MIN(drug_exposure_start_date) as riva_first_date
     FROM @cdm_schema.drug_exposure
-    WHERE drug_concept_id in (40241331)-- Rivaroxaban (B01AF01)
+    WHERE drug_concept_id in (@riva_ids)-- Rivaroxaban (B01AF01)
         AND drug_exposure_start_date >= to_date(@study_start_yyyymmdd::varchar,'yyyymmdd') -- After Nov 30, 2011
         AND drug_exposure_start_date <= to_date(@study_end_yyyymmdd::varchar,'yyyymmdd') -- Before Jan 01 2015
     GROUP BY person_id
@@ -27,7 +26,12 @@ WITH condition_start AS (
     vka_start AS (
     SELECT person_id, MIN(drug_exposure_start_date) as vka_first_date
     FROM @cdm_schema.drug_exposure
-    WHERE drug_concept_id in (1310149, 19035344) -- Warfarin and Phenprocoumon (B01AA03, B01AA04)
+    WHERE (
+        -- Warfarin
+        drug_concept_id in (@warf_ids)
+        -- Phenprocoumon
+        OR drug_concept_id in (@phen_ids)
+        )
         AND drug_exposure_start_date >= to_date(@study_start_yyyymmdd::varchar,'yyyymmdd') -- After Nov 30, 2011
         AND drug_exposure_start_date <= to_date(@study_end_yyyymmdd::varchar,'yyyymmdd') -- Before Jan 01 2015
     GROUP BY person_id
@@ -73,7 +77,7 @@ WITH condition_start AS (
         FROM @cdm_schema.drug_exposure
         JOIN population -- Join here decreases the size of the table
             ON drug_exposure.person_id = population.person_id
-        WHERE drug_concept_id in (40241331,1310149,19035344,40228152,43013024) -- riva, warfarin, phenprocoumon, dabigatran, apixaban
+        WHERE drug_concept_id in (@riva_ids,@warf_ids,@phen_ids,@dabi_ids,@apix_ids) -- 40241331,1310149,19035344,40228152,43013024) -- riva, warfarin, phenprocoumon, dabigatran, apixaban
 ),
 /* First oac occurrence (for naive calculation) */
     first_oac as (
@@ -89,15 +93,15 @@ WITH condition_start AS (
             FROM oac_history
             WHERE drug_exposure_start_date > index_date
                   -- Not the same drug as index drug
-                  AND NOT ( (drug_concept_id = 40241331 AND riva_or_vka = 1)
-                         OR (drug_concept_id in (1310149,19035344) AND riva_or_vka = 0)
+                  AND NOT ( (drug_concept_id IN (@riva_ids) AND riva_or_vka = 1)
+                         OR (drug_concept_id IN (@warf_ids) AND riva_or_vka = 0)
                           )
             GROUP BY person_id
         ) A JOIN oac_history B
                 ON A.person_id = B.person_id AND A.switchDate = B.drug_exposure_start_date
 )
-
-SELECT  population.person_id, population.riva_or_vka, population.index_date,
+-- If multiple lines for one person, select just one. Happens e.g. when multiple switches on the same date.
+SELECT  DISTINCT ON (population.person_id) population.person_id, population.riva_or_vka, population.index_date,
         -- Naive
         CASE WHEN first_oac_date < index_date
              THEN 0 -- Non-naive: Purchase after index date

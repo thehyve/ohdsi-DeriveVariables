@@ -87,21 +87,21 @@ invokeSql <- function(fileName, dbms, conn, text, use.ffdf = FALSE, quiet = TRUE
 
 #' Copy of function SqlRender::loadRenderTranslateSql
 #' @keywords internal
-loadRenderTranslateSql <- function(sqlFilename, packageName, dbms = "sql server", ...,
-                                   oracleTempSchema = NULL) {
+loadRenderTranslateSql2 <- function(sqlFilename, packageName, dbms = "sql server", ...,
+                                    oracleTempSchema = NULL) {
 
     pathToSql <- system.file(paste("sql/", gsub(" ", "_", dbms),
                                    sep = ""), sqlFilename, package = packageName)
     mustTranslate <- !file.exists(pathToSql)
     if (mustTranslate) {
-        pathToSql <- system.file(paste("sql/", "sql_server",
-                                       sep = ""), sqlFilename, package = packageName)
+      pathToSql <- system.file(paste("sql/", "sql_server",
+                                     sep = ""), sqlFilename, package = packageName)
     }
     parameterizedSql <- readChar(pathToSql, file.info(pathToSql)$size)
     renderedSql <- renderSql(parameterizedSql[1], ...)$sql
     if (mustTranslate)
-        renderedSql <- translateSql(renderedSql, "sql server",
-                                    dbms, oracleTempSchema)$sql
+      renderedSql <- translateSql(renderedSql, "sql server",
+                                  dbms, oracleTempSchema)$sql
     renderedSql
 }
 
