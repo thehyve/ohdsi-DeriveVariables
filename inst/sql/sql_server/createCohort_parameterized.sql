@@ -34,15 +34,9 @@ WITH condition_start AS (
         AND drug_exposure_start_date <= DATE '@study_end_date' -- Before Jan 01 2015
     GROUP BY person_id
 ),
-    ages AS (
-    SELECT person_id, MAX(value_as_number) as value_as_number
-    FROM @cdm_schema.measurement
-    WHERE measurement_concept_id = 4265453 -- 'alder'
-    GROUP BY person_id
-),
 /* Step 3. Study cohort selection */
     cohort AS (
-    SELECT person.person_id, person.year_of_birth, condition_index, riva_first_date, vka_first_date, ages.value_as_number as age,
+    SELECT person.person_id, person.year_of_birth, condition_index, riva_first_date, vka_first_date,
             -- Determine which was first, riva or vka. 1 = riva, 0 = vka
             CASE WHEN riva_first_date < vka_first_date OR vka_first_date IS NULL
                  THEN 1
@@ -66,8 +60,6 @@ WITH condition_start AS (
         ON person.person_id = vka_start.person_id
     LEFT JOIN condition_start
         ON person.person_id = condition_start.person_id
-    LEFT JOIN ages
-        ON ages.person_id = person.person_id
 ),
 /* Step 4. Get OAC drug history */
     oac_history as (
