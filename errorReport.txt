@@ -2,17 +2,10 @@ DBMS:
 postgresql
 
 Error:
-org.postgresql.util.PSQLException: ERROR: column "study_start_yyyymmdd" does not exist
-  Position: 906
+execute JDBC update query failed in dbSendUpdate (ERROR: relation "population" does not exist
+  Position: 4599)
 
 SQL:
-/*
-Writes studypopulation to the relation study.masterfile
-TODO: this is a slow procedure. Lot of calculations. Use EXPLAIN to find a way to speed things up.
-*/
-drop schema study cascade;
-CREATE SCHEMA study;
-
 CREATE TABLE  study.masterfile
 
 AS
@@ -20,43 +13,46 @@ WITH  condition_start  AS  (
     /* Step 1. Per patient, take the date of first occurrence of a diagnosis of AF */
     SELECT person_id, MIN(condition_start_date) as condition_index
     FROM cdm5.condition_occurrence
-    -- WHERE condition_concept_id in (313217,4117112,45768480,4232697,44782442,4108832,4119602,4119601,4141360,4232691,4199501,4154290) -- or ancestor_concept_id 313217
-    -- WHERE condition_source_value like 'I48%' -- AF is all ICD10 everything starting with I48
-    WHERE condition_start_date > to_date('19000101','yyyymmdd')
+    WHERE condition_start_date > DATE '1900-01-01' -- Filter empty dates
     GROUP BY person_id
 ),
     /* Step 2. First Riva occurrence within inclusion period */
     riva_start AS (
     SELECT person_id, MIN(drug_exposure_start_date) as riva_first_date
     FROM cdm5.drug_exposure
-    WHERE drug_concept_id in (40241331)-- Rivaroxaban (B01AF01)
-        AND drug_exposure_start_date >= to_date(@study_start_yyyymmdd::varchar,'yyyymmdd') -- After Nov 30, 2011
-        AND drug_exposure_start_date <= to_date(@study_end_yyyymmdd::varchar,'yyyymmdd') -- Before Jan 01 2015
+    WHERE drug_concept_id in (40244445,40241331,40241332,40241333,40244446,40244447,40244443,40241334,40244448,40241335,40244444,40244449,40241337,40241336,40244450)-- Rivaroxaban (B01AF01)
+        AND drug_exposure_start_date >= DATE '2011-12-01' -- After Nov 30, 2011
+        AND drug_exposure_start_date <= DATE '2014-12-31' -- Before Jan 01 2015
     GROUP BY person_id
 ),
     /* Step 2. First VKA occurrence within inclusion period */
     vka_start AS (
     SELECT person_id, MIN(drug_exposure_start_date) as vka_first_date
     FROM cdm5.drug_exposure
-    WHERE drug_concept_id in (1310149, 19035344) -- Warfarin and Phenprocoumon (B01AA03, B01AA04)
-        AND drug_exposure_start_date >= to_date(@study_start_yyyymmdd::varchar,'yyyymmdd') -- After Nov 30, 2011
-        AND drug_exposure_start_date <= to_date(@study_end_yyyymmdd::varchar,'yyyymmdd') -- Before Jan 01 2015
+    WHERE (
+        -- Warfarin
+        drug_concept_id in (44663115,44556166,44562589,44621649,44643120,40163553,44557985,40163549,44547357,44581120,44611173,40163535,44604212,44605858,44645771,44678256,40163537,40163528,44580621,44579352,40163560,44560351,40163539,44549319,44561018,44611705,44578601,40163519,44611547,44587179,44663782,44674155,44618390,44607893,44644567,40163550,44549318,44655361,44679336,40163534,44674600,44586763,44662517,40163511,44653078,44599599,44643067,44632766,40163554,44632290,40163564,40163514,44610278,40093134,40163567,44642416,44627226,40163507,40093131,40163558,44552268,40163518,44559160,44670738,40121983,40163527,44571574,40163559,40163536,40121984,44604248,44647604,44667136,44616988,40163523,44645391,40163525,40163515,40163520,40163517,40163557,44604598,44556575,44631436,44644475,44657905,44630908,40163569,44667448,40163551,44635583,44622848,44622849,40163533,40163555,44547738,40163547,40163566,40163516,44626965,40163532,40163568,40163548,44667174,44612008,44579230,40163565,40093132,44617776,44631830,44601988,44647884,44662478,44603265,40163570,40163552,44574108,40163541,40163513,44545243,44551746,40163561,44563518,40163530,40093130,44560746,44622752,40163543,44605424,44614948,44650425,44570203,44617269,40163529,44583471,44676840,40163509,44605024,44622055,44611706,1310149,40163531,44665175,44665051,40163526,40163512,40163563,40163562,44677342,40163524,40163556,44556574,40163522,40163542,44674154,40163546,44672367,44595885,40163538,44607132,44578361,44643066,40163510,40163508,44658031,44589399,44611597,44562846,44548797,44602298,40163521,40163540,40093133,44616175,44546930,40163544,44563271,44548604,44587502,44550692,44656985,44569040,40163545,44637417,44625675,44626589)
+        -- Phenprocoumon
+        OR drug_concept_id in (19035344,40078200,19079272,19081825)
+        )
+        AND drug_exposure_start_date >= DATE '2011-12-01' -- After Nov 30, 2011
+        AND drug_exposure_start_date <= DATE '2014-12-31' -- Before Jan 01 2015
     GROUP BY person_id
 ),
     ages AS (
     SELECT person_id, MAX(value_as_number) as value_as_number
     FROM cdm5.measurement
-    WHERE measurement_source_value = 'alder'
+    WHERE measurement_concept_id = 4265453 -- 'alder'
     GROUP BY person_id
 ),
-/* Step 3. Study population selection */
-    population AS (
+/* Step 3. Study cohort selection */
+    cohort AS (
     SELECT person.person_id, person.year_of_birth, condition_index, riva_first_date, vka_first_date, ages.value_as_number as age,
             -- Determine which was first, riva or vka. 1 = riva, 0 = vka
             CASE WHEN riva_first_date < vka_first_date OR vka_first_date IS NULL
                  THEN 1
                  ELSE 0
-            END as riva_or_vka,
+            END as index_drug,
 
             CASE WHEN riva_first_date < vka_first_date OR vka_first_date IS NULL
                  THEN riva_first_date
@@ -84,7 +80,7 @@ WITH  condition_start  AS  (
         FROM cdm5.drug_exposure
         JOIN population -- Join here decreases the size of the table
             ON drug_exposure.person_id = population.person_id
-        WHERE drug_concept_id in (40241331,1310149,19035344,40228152,43013024) -- riva, warfarin, phenprocoumon, dabigatran, apixaban
+        WHERE drug_concept_id in (40244445,40241331,40241332,40241333,40244446,40244447,40244443,40241334,40244448,40241335,40244444,40244449,40241337,40241336,40244450,44663115,44556166,44562589,44621649,44643120,40163553,44557985,40163549,44547357,44581120,44611173,40163535,44604212,44605858,44645771,44678256,40163537,40163528,44580621,44579352,40163560,44560351,40163539,44549319,44561018,44611705,44578601,40163519,44611547,44587179,44663782,44674155,44618390,44607893,44644567,40163550,44549318,44655361,44679336,40163534,44674600,44586763,44662517,40163511,44653078,44599599,44643067,44632766,40163554,44632290,40163564,40163514,44610278,40093134,40163567,44642416,44627226,40163507,40093131,40163558,44552268,40163518,44559160,44670738,40121983,40163527,44571574,40163559,40163536,40121984,44604248,44647604,44667136,44616988,40163523,44645391,40163525,40163515,40163520,40163517,40163557,44604598,44556575,44631436,44644475,44657905,44630908,40163569,44667448,40163551,44635583,44622848,44622849,40163533,40163555,44547738,40163547,40163566,40163516,44626965,40163532,40163568,40163548,44667174,44612008,44579230,40163565,40093132,44617776,44631830,44601988,44647884,44662478,44603265,40163570,40163552,44574108,40163541,40163513,44545243,44551746,40163561,44563518,40163530,40093130,44560746,44622752,40163543,44605424,44614948,44650425,44570203,44617269,40163529,44583471,44676840,40163509,44605024,44622055,44611706,1310149,40163531,44665175,44665051,40163526,40163512,40163563,40163562,44677342,40163524,40163556,44556574,40163522,40163542,44674154,40163546,44672367,44595885,40163538,44607132,44578361,44643066,40163510,40163508,44658031,44589399,44611597,44562846,44548797,44602298,40163521,40163540,40093133,44616175,44546930,40163544,44563271,44548604,44587502,44550692,44656985,44569040,40163545,44637417,44625675,44626589,19035344,40078200,19079272,19081825,40228152,43013024) -- 40241331,1310149,19035344,40228152,43013024) -- riva, warfarin, phenprocoumon, dabigatran, apixaban
 ),
 /* First oac occurrence (for naive calculation) */
     first_oac as (
@@ -100,39 +96,40 @@ WITH  condition_start  AS  (
             FROM oac_history
             WHERE drug_exposure_start_date > index_date
                   -- Not the same drug as index drug
-                  AND NOT ( (drug_concept_id = 40241331 AND riva_or_vka = 1)
-                         OR (drug_concept_id in (1310149,19035344) AND riva_or_vka = 0)
+                  AND NOT ( (drug_concept_id IN (40244445,40241331,40241332,40241333,40244446,40244447,40244443,40241334,40244448,40241335,40244444,40244449,40241337,40241336,40244450) AND index_drug = 1)
+                         OR (drug_concept_id IN (44663115,44556166,44562589,44621649,44643120,40163553,44557985,40163549,44547357,44581120,44611173,40163535,44604212,44605858,44645771,44678256,40163537,40163528,44580621,44579352,40163560,44560351,40163539,44549319,44561018,44611705,44578601,40163519,44611547,44587179,44663782,44674155,44618390,44607893,44644567,40163550,44549318,44655361,44679336,40163534,44674600,44586763,44662517,40163511,44653078,44599599,44643067,44632766,40163554,44632290,40163564,40163514,44610278,40093134,40163567,44642416,44627226,40163507,40093131,40163558,44552268,40163518,44559160,44670738,40121983,40163527,44571574,40163559,40163536,40121984,44604248,44647604,44667136,44616988,40163523,44645391,40163525,40163515,40163520,40163517,40163557,44604598,44556575,44631436,44644475,44657905,44630908,40163569,44667448,40163551,44635583,44622848,44622849,40163533,40163555,44547738,40163547,40163566,40163516,44626965,40163532,40163568,40163548,44667174,44612008,44579230,40163565,40093132,44617776,44631830,44601988,44647884,44662478,44603265,40163570,40163552,44574108,40163541,40163513,44545243,44551746,40163561,44563518,40163530,40093130,44560746,44622752,40163543,44605424,44614948,44650425,44570203,44617269,40163529,44583471,44676840,40163509,44605024,44622055,44611706,1310149,40163531,44665175,44665051,40163526,40163512,40163563,40163562,44677342,40163524,40163556,44556574,40163522,40163542,44674154,40163546,44672367,44595885,40163538,44607132,44578361,44643066,40163510,40163508,44658031,44589399,44611597,44562846,44548797,44602298,40163521,40163540,40093133,44616175,44546930,40163544,44563271,44548604,44587502,44550692,44656985,44569040,40163545,44637417,44625675,44626589) AND index_drug = 0)
                           )
             GROUP BY person_id
         ) A JOIN oac_history B
                 ON A.person_id = B.person_id AND A.switchDate = B.drug_exposure_start_date
 )
-
+-- If multiple lines for one person, select just one. Happens e.g. when multiple switches on the same date.
  SELECT
-  population.person_id, population.riva_or_vka, population.index_date,
+  DISTINCT ON (cohort.person_id)
+        cohort.person_id,
+        cohort.index_drug,
+        cohort.index_date,
         -- Naive
         CASE WHEN first_oac_date < index_date
              THEN 0 -- Non-naive: Purchase after index date
              ELSE 1 -- Naive: Purchase before index date,
         END as is_naive,
-        -- Switch?
+        -- Switch to other anticoagulant
         switchto,
         switchDate
 
 FROM
- population
+ cohort
 LEFT JOIN first_oac
   ON first_oac.person_id = population.person_id
 LEFT JOIN switchers
   ON switchers.person_id = population.person_id
 WHERE
-  /* Actual Study population selection rules. */
+  /* Study cohort selection rules. */
   (riva_first_date IS NOT NULL or vka_first_date IS NOT NULL)
   AND same_day = 0
-  AND age > 18 AND (2012 - year_of_birth) > 18 -- Older than 18 at start of inclusion period
-  AND (condition_index IS NULL OR condition_index < index_date) -- Missing AF or tempindex before index date
-ORDER BY person_id
-;
+  AND (EXTRACT(YEAR FROM index_date) - year_of_birth) > 18 -- Older than 18 at index date
+  AND (condition_index IS NULL OR condition_index < index_date) -- No AF diagnosis or tempindex before index date
 
 
 R version:
@@ -151,6 +148,7 @@ Attached base packages:
 - base
 
 Other attached packages:
+- survival (2.38-3)
 - OHDSIDeriveVariables (0.1.0)
 - SqlRender (1.1.4)
 - DatabaseConnector (1.5.0)

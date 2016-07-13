@@ -24,7 +24,7 @@ diabetesAtIndex <- getConditionConcomitant( diabetes_ids,
                                             cohortDatabaseSchema,
                                             cohortTableName)
 
-cont_table <- table(diabetesAtIndex, RIVA_OR_VKA_STRING)
+cont_table <- table(diabetesAtIndex, INDEX_DRUG_STRING)
 print("Diabetes at index")
 prop.table(cont_table, margin=2)
 chisq.test(cont_table, correct = FALSE)
@@ -36,7 +36,8 @@ pacemakerImplanted <- getProcedureHistory( pacemaker_ids,
                                            cohortDatabaseSchema,
                                            cohortTableName)
 
-cont_table_pm <-  table(pacemakerImplanted, RIVA_OR_VKA_STRING)
+cont_table_pm <-  table(pacemakerImplanted, INDEX_DRUG_STRING)
 print("Pacemaker Implanted before index")
 prop.table(cont_table_pm, margin=2)
 chisq.test(cont_table_pm, correct = FALSE)
+

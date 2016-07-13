@@ -26,7 +26,7 @@ censor <- risk_censor$CENSOR
 
 # Custom function printing the survival statistics.
 # Annual death rate for both groups, Hazard Ratio 95% Conf. Interval and Kaplan Meijer Curve.
-ph.summary <- printSurvivalStatistics( daysAtRiskStroke, censor, RIVA_OR_VKA_STRING )
+ph.summary <- printSurvivalStatistics( daysAtRiskStroke, censor, INDEX_DRUG_STRING )
 
 ## Atrial fibrillation stroke risk analysis
 concepts_acute_af <- c(4108832)
@@ -35,4 +35,4 @@ risk_censor <- getConditionDaysAtRisk(concepts_acute_af, connectionDetails, coho
 daysAtRiskAF <- risk_censor$DAYS_AT_RISK
 censor <- risk_censor$CENSOR
 
-ph.summary <- printSurvivalStatistics( daysAtRiskAF, censor, RIVA_OR_VKA_STRING )
+ph.summary <- printSurvivalStatistics( daysAtRiskAF, censor, INDEX_DRUG_STRING )

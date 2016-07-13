@@ -1,8 +1,4 @@
-##### Statistical wrappers ######
-
-# Simple wrapper for easy formatted printing to screen. outer invisible may be unnecessary (http://stackoverflow.com/questions/13023274/how-to-do-printf-in-r)
-printf <- function(...) invisible(print(sprintf(...)))
-
+#' Prints statistics of a continuous variable
 printContinuousDescriptives <- function(x, name = "", ignore_na = TRUE){
   # Number of variables (that are not na)
   n <- sum(!is.na(x))
@@ -19,8 +15,8 @@ printContinuousDescriptives <- function(x, name = "", ignore_na = TRUE){
   printf( "IQR         = %.0f-%.0f", quartiles[[1]], quartiles[[3]] )
 }
 
-## Calculate and print survival statistics, comparing two groups
-## All three variables should have the same size
+#' Calculate and print survival statistics, comparing two groups
+#' All three variables should have the same size
 printSurvivalStatistics <- function(days_at_risk, censor, grouping, kaplan_ymin = FALSE){
   library(survival)
 

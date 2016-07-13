@@ -105,6 +105,11 @@ loadRenderTranslateSql2 <- function(sqlFilename, packageName, dbms = "sql server
     renderedSql
 }
 
+#' Simple wrapper for easy formatted printing to screen.
+#' Outer invisible may be unnecessary
+#' Source: http://stackoverflow.com/questions/13023274/how-to-do-printf-in-r
+printf <- function(...) invisible(print(sprintf(...)))
+
 
 #' @title Email results
 #'

@@ -1,5 +1,5 @@
 /*
-Writes studypopulation to the relation study.masterfile
+Creates Study cohort and saves to a table.
 */
 DROP SCHEMA IF EXISTS @target_schema cascade;
 CREATE SCHEMA @target_schema;
@@ -8,9 +8,7 @@ WITH condition_start AS (
     /* Step 1. Per patient, take the date of first occurrence of a diagnosis of AF */
     SELECT person_id, MIN(condition_start_date) as condition_index
     FROM @cdm_schema.condition_occurrence
-    -- WHERE condition_concept_id in (313217,4117112,45768480,4232697,44782442,4108832,4119602,4119601,4141360,4232691,4199501,4154290) -- or ancestor_concept_id 313217
-    -- WHERE condition_source_value like 'I48%' -- AF is all ICD10 everything starting with I48
-    WHERE condition_start_date > to_date('19000101','yyyymmdd')
+    WHERE condition_start_date > DATE '1900-01-01' -- Filter empty dates
     GROUP BY person_id
 ),
     /* Step 2. First Riva occurrence within inclusion period */
@@ -18,8 +16,8 @@ WITH condition_start AS (
     SELECT person_id, MIN(drug_exposure_start_date) as riva_first_date
     FROM @cdm_schema.drug_exposure
     WHERE drug_concept_id in (@riva_ids)-- Rivaroxaban (B01AF01)
-        AND drug_exposure_start_date >= to_date(@study_start_yyyymmdd::varchar,'yyyymmdd') -- After Nov 30, 2011
-        AND drug_exposure_start_date <= to_date(@study_end_yyyymmdd::varchar,'yyyymmdd') -- Before Jan 01 2015
+        AND drug_exposure_start_date >= DATE '@study_start_date' -- After Nov 30, 2011
+        AND drug_exposure_start_date <= DATE '@study_end_date' -- Before Jan 01 2015
     GROUP BY person_id
 ),
     /* Step 2. First VKA occurrence within inclusion period */
@@ -32,24 +30,24 @@ WITH condition_start AS (
         -- Phenprocoumon
         OR drug_concept_id in (@phen_ids)
         )
-        AND drug_exposure_start_date >= to_date(@study_start_yyyymmdd::varchar,'yyyymmdd') -- After Nov 30, 2011
-        AND drug_exposure_start_date <= to_date(@study_end_yyyymmdd::varchar,'yyyymmdd') -- Before Jan 01 2015
+        AND drug_exposure_start_date >= DATE '@study_start_date' -- After Nov 30, 2011
+        AND drug_exposure_start_date <= DATE '@study_end_date' -- Before Jan 01 2015
     GROUP BY person_id
 ),
     ages AS (
     SELECT person_id, MAX(value_as_number) as value_as_number
     FROM @cdm_schema.measurement
-    WHERE measurement_source_value = 'alder'
+    WHERE measurement_concept_id = 4265453 -- 'alder'
     GROUP BY person_id
 ),
-/* Step 3. Study population selection */
-    population AS (
+/* Step 3. Study cohort selection */
+    cohort AS (
     SELECT person.person_id, person.year_of_birth, condition_index, riva_first_date, vka_first_date, ages.value_as_number as age,
             -- Determine which was first, riva or vka. 1 = riva, 0 = vka
             CASE WHEN riva_first_date < vka_first_date OR vka_first_date IS NULL
                  THEN 1
                  ELSE 0
-            END as riva_or_vka,
+            END as index_drug,
 
             CASE WHEN riva_first_date < vka_first_date OR vka_first_date IS NULL
                  THEN riva_first_date
@@ -73,10 +71,10 @@ WITH condition_start AS (
 ),
 /* Step 4. Get OAC drug history */
     oac_history as (
-        SELECT population.*, drug_concept_id, drug_exposure_start_date
+        SELECT cohort.*, drug_concept_id, drug_exposure_start_date
         FROM @cdm_schema.drug_exposure
-        JOIN population -- Join here decreases the size of the table
-            ON drug_exposure.person_id = population.person_id
+        JOIN cohort -- Join here decreases the size of the table
+            ON drug_exposure.person_id = cohort.person_id
         WHERE drug_concept_id in (@riva_ids,@warf_ids,@phen_ids,@dabi_ids,@apix_ids) -- 40241331,1310149,19035344,40228152,43013024) -- riva, warfarin, phenprocoumon, dabigatran, apixaban
 ),
 /* First oac occurrence (for naive calculation) */
@@ -93,34 +91,36 @@ WITH condition_start AS (
             FROM oac_history
             WHERE drug_exposure_start_date > index_date
                   -- Not the same drug as index drug
-                  AND NOT ( (drug_concept_id IN (@riva_ids) AND riva_or_vka = 1)
-                         OR (drug_concept_id IN (@warf_ids) AND riva_or_vka = 0)
+                  AND NOT ( (drug_concept_id IN (@riva_ids) AND index_drug = 1)
+                         OR (drug_concept_id IN (@warf_ids) AND index_drug = 0)
                           )
             GROUP BY person_id
         ) A JOIN oac_history B
                 ON A.person_id = B.person_id AND A.switchDate = B.drug_exposure_start_date
 )
 -- If multiple lines for one person, select just one. Happens e.g. when multiple switches on the same date.
-SELECT  DISTINCT ON (population.person_id) population.person_id, population.riva_or_vka, population.index_date,
+SELECT  DISTINCT ON (cohort.person_id)
+        cohort.person_id,
+        cohort.index_drug,
+        cohort.index_date,
         -- Naive
         CASE WHEN first_oac_date < index_date
              THEN 0 -- Non-naive: Purchase after index date
              ELSE 1 -- Naive: Purchase before index date,
         END as is_naive,
-        -- Switch?
+        -- Switch to other anticoagulant
         switchto,
         switchDate
 INTO @target_schema.@target_table
-FROM population
+FROM cohort
 LEFT JOIN first_oac
-  ON first_oac.person_id = population.person_id
+  ON first_oac.person_id = cohort.person_id
 LEFT JOIN switchers
-  ON switchers.person_id = population.person_id
+  ON switchers.person_id = cohort.person_id
 WHERE
-  /* Actual Study population selection rules. */
+  /* Study cohort selection rules. */
   (riva_first_date IS NOT NULL or vka_first_date IS NOT NULL)
   AND same_day = 0
-  AND age > 18 AND (2012 - year_of_birth) > 18 -- Older than 18 at start of inclusion period
-  AND (condition_index IS NULL OR condition_index < index_date) -- Missing AF or tempindex before index date
-ORDER BY person_id
+  AND (EXTRACT(YEAR FROM index_date) - year_of_birth) > 18 -- Older than 18 at index date
+  AND (condition_index IS NULL OR condition_index < index_date) -- No AF diagnosis or tempindex before index date
 ;

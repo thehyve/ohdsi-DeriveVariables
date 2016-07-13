@@ -3,6 +3,11 @@
 #' - Excluding the patients who had their first AF after index
 #' - Excluding all the patients with index drug both riva and vka
 #' - Excluding all patients younger than 18 years at index date.
+#' Additional variables are created:
+#' - SWITCHTO = Concept id of anticoagulant switched to after index date, if switched
+#' - SWITCHDATE = Date of switch
+#' - IS_NAIVE = A 1 indicates that the patienti is naive: no use of anticoagulant before index date
+#' - RIVA_OR_VKA => 1 if Rivaroxaban is index drug, 0 if VKA is index drug.
 createCohort <- function(connection, connectionDetails, cdm_schema, target_schema, target_table){
 
   # Input the ids
@@ -17,8 +22,8 @@ createCohort <- function(connection, connectionDetails, cdm_schema, target_schem
                                  dbms = connectionDetails$dbms,
                                  target_schema = target_schema,
                                  target_table = target_table,
-                                 study_start_yyyymmdd = '20111201',
-                                 study_end_yyyymmdd = '20141231',
+                                 study_start_date = '2011-12-01',
+                                 study_end_date = '2014-12-31',
                                  riva_ids = paste(riva_ids,collapse=","),
                                  warf_ids = paste(warf_ids,collapse=","),
                                  phen_ids = paste(phen_ids,collapse=","),

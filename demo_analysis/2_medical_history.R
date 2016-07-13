@@ -17,16 +17,17 @@ cohort <- getCohort(connectionDetails, cdmDatabaseSchema, cohortDatabaseSchema, 
 attach(cohort)
 
 ########### Medical History ##############
-## Stroke (I63). The concept ID's are found through vocabulary search in the OHDSI Atlas tool.
+## History of stroke (I63)
 stroke_ids <- c(443454,443790,443864,444091,4031045,4043731,4043732,4045735,4045737,4045738,4045740,4045741,4046237,4046358,4046359,4046360,4046361,4046362,4048784,4077086,4108356,4110189,4110190,4110192,4111714,4112026,4119140,4129534,4131383,4138327,4141405,4142739,4145897,4146185,4319146,40479572,43530683,43531607,44782773,45767658,45772786,46270031,46270380,46270381,46273649)
 stroke_history <- getConditionHistory(stroke_ids,
-                                        connectionDetails,
-                                        target_schema = cohortDatabaseSchema,
-                                        target_table = cohortTableName)
-
-stroke_contigency <- table( stroke_history, RIVA_OR_VKA_STRING )
-print("Stroke history")
+                                      connectionDetails,
+                                      target_schema = cohortDatabaseSchema,
+                                      target_table = cohortTableName)
+# Create contigency table
+stroke_contigency <- table(stroke_history, INDEX_DRUG_STRING)
+# Show contigency table as percentage of total number of riva/vka patients
 prop.table(stroke_contigency, margin = 2)
+# Perform a Chi Square test
 chisq.test(stroke_contigency, correct = FALSE)
 
 ## Bleeding
@@ -37,7 +38,7 @@ bleeding_history <- getConditionHistory( bleed_ids,
                                             connectionDetails,
                                             target_schema = cohortDatabaseSchema,
                                             target_table = cohortTableName)
-bleed_contigency <- table(bleeding_history, RIVA_OR_VKA_STRING)
+bleed_contigency <- table(bleeding_history, INDEX_DRUG_STRING)
 print("Bleeding history")
 prop.table(bleed_contigency, margin=2)
 chisq.test(bleed_contigency, correct = FALSE)
@@ -48,7 +49,7 @@ diabetes_history <- getConditionHistory(diabetes_ids,
                                           connectionDetails,
                                           target_schema = cohortDatabaseSchema,
                                           target_table = cohortTableName)
-diabetes_contigency <- table(diabetes_history, RIVA_OR_VKA_STRING)
+diabetes_contigency <- table(diabetes_history, INDEX_DRUG_STRING)
 print("Diabetes history")
 prop.table(diabetes_contigency, margin = 2)
 chisq.test(diabetes_contigency, correct = FALSE)
@@ -59,7 +60,7 @@ chisq.test(diabetes_contigency, correct = FALSE)
 ace_ids <- c("C09AA%","C09B%")
 ace_history <- getDrugHistoryByATC( ace_ids, connectionDetails, cohortDatabaseSchema, cohortTableName )
 
-ace_contigency <-  table(ace_history, RIVA_OR_VKA_STRING)
+ace_contigency <-  table(ace_history, INDEX_DRUG_STRING)
 print("ACE-inhibitor")
 prop.table(ace_contigency, margin = 2)
 chisq.test(ace_contigency, correct = FALSE)
@@ -69,7 +70,8 @@ chisq.test(ace_contigency, correct = FALSE)
 ace_ids <- c("C09AA%","C09B%")
 ace_atIndex <- getDrugAtIndexByATC( ace_ids, connectionDetails, cohortDatabaseSchema, cohortTableName )
 
-ace_contigency <-  table(ace_atIndex, RIVA_OR_VKA_STRING)
+ace_contigency <-  table(ace_atIndex, INDEX_DRUG_STRING)
 print("ACE-inhibitor At Index")
 prop.table(ace_contigency)
 chisq.test(ace_contigency, correct = FALSE)
+

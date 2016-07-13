@@ -1,5 +1,5 @@
 /* Get cohort with income and background data */
-SELECT *
+SELECT cohort.*, person.gender_concept_id, person.year_of_birth, income.income, background.background
 FROM @target_schema.@target_table AS cohort
 JOIN @cdm_schema.person
   ON cohort.person_id = person.person_id
@@ -21,6 +21,7 @@ LEFT JOIN (
     GROUP BY person_id
 ) background
     ON cohort.person_id = background.person_id
-    
+
+-- Very important to match all derived variables
 ORDER BY cohort.person_id
 ;
