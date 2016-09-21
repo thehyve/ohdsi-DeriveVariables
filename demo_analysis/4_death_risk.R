@@ -17,6 +17,7 @@ cohort <- getCohort(connectionDetails, cdmDatabaseSchema, cohortDatabaseSchema, 
 attach(cohort)
 
 ########### Death ###########
+## All-cause mortality
 # Get days at risk. Patients still alive will be given the days from index to end of study.
 # getDeathDaysAtRisk returns a dataframe with $days_at_risk and $is_deceased.
 deaths <- getDeathDaysAtRisk(FALSE, connectionDetails, cohortDatabaseSchema, cohortTableName)
@@ -32,3 +33,12 @@ print(ph.summary)
 ageAtIndex <- getAgeAtIndex( cohort )
 ph.model.adjusted <- coxph( Surv(daysAtRiskAll,is_deceased) ~ INDEX_DRUG + strata(GENDER_STRING, ageAtIndex), cohort )
 summary(ph.model.adjusted)
+
+## Mortality from intracranial bleed
+intracranial_bleed <- c(4110189,4108356,443454,4110192,4112026) #I63 and I693
+deaths <- getDeathDaysAtRisk(intracranial_bleed, connectionDetails, cohortDatabaseSchema, cohortTableName)
+daysAtRiskAll <- deaths$DAYS_AT_RISK
+is_deceased <- deaths$CENSOR
+
+ph.summary <- printSurvivalStatistics( daysAtRiskAll, is_deceased, INDEX_DRUG_STRING )
+print(ph.summary)

@@ -22,7 +22,7 @@ createCohort <- function(connection, connectionDetails, cdm_schema, target_schem
                                  dbms = connectionDetails$dbms,
                                  target_schema = target_schema,
                                  target_table = target_table,
-                                 study_start_date = '2011-12-01',
+                                 study_start_date = '2012-10-03',
                                  study_end_date = '2014-12-31',
                                  riva_ids = paste(riva_ids,collapse=","),
                                  warf_ids = paste(warf_ids,collapse=","),
