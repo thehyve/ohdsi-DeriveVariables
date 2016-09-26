@@ -8,7 +8,9 @@
 #' - SWITCHDATE = Date of switch
 #' - IS_NAIVE = A 1 indicates that the patienti is naive: no use of anticoagulant before index date
 #' - RIVA_OR_VKA => 1 if Rivaroxaban is index drug, 0 if VKA is index drug.
-createCohort <- function(connection, connectionDetails, cdm_schema, target_schema, target_table){
+createCohort <- function(connection, connectionDetails, cdm_schema,
+                         target_schema, target_table,
+                         onlyNaivePatients = TRUE){
 
   # Input the ids
   riva_ids <- c(40244445,40241331,40241332,40241333,40244446,40244447,40244443,40241334,40244448,40241335,40244444,40244449,40241337,40241336,40244450)
@@ -16,6 +18,12 @@ createCohort <- function(connection, connectionDetails, cdm_schema, target_schem
   phen_ids <- c(19035344,40078200,19079272,19081825)
   dabi_ids <- c(40228152)
   apix_ids <- c(43013024)
+
+  # Additional where clause for selecting only naive patients (with 'No AOC use before index date')
+  where_additional <- ""
+  if (onlyNaivePatients) {
+    where_additional <- "AND first_oac_date >= index_date"
+  }
 
   sql <- loadRenderTranslateSql2("createCohort_parameterized.sql","OHDSIDeriveVariables",
                                  cdm_schema = cdm_schema,
@@ -28,7 +36,8 @@ createCohort <- function(connection, connectionDetails, cdm_schema, target_schem
                                  warf_ids = paste(warf_ids,collapse=","),
                                  phen_ids = paste(phen_ids,collapse=","),
                                  dabi_ids = paste(dabi_ids,collapse=","),
-                                 apix_ids = paste(apix_ids,collapse=",")
+                                 apix_ids = paste(apix_ids,collapse=","),
+                                 whereAdditional = where_additional
   )
 
   executeSql(connection, sql)

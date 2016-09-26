@@ -27,7 +27,11 @@ connection <- connect(connectionDetails)
 # - Excluding the patients who had their first AF after index
 # - Excluding all the patients with index drug both riva and vka
 # - Excluding all patients younger than 18 years at index date.
-createCohort(connection, connectionDetails, cdmDatabaseSchema, cohortDatabaseSchema, cohortTableName)
+# - Excluding non-naive patients (can be ignored by setting onlyNaive to FALSE)
+onlyNaive = TRUE
+createCohort(connection, connectionDetails, cdmDatabaseSchema,
+             cohortDatabaseSchema, cohortTableName,
+             onlyNaive)
 
 # View the resulting cohort
 cohort <- getCohort(connectionDetails, cdmDatabaseSchema, cohortDatabaseSchema, cohortTableName)

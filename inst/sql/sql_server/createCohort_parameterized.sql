@@ -97,8 +97,8 @@ SELECT  DISTINCT ON (cohort.person_id)
         cohort.index_date,
         -- Naive
         CASE WHEN first_oac_date < index_date
-             THEN 0 -- Non-naive: Purchase after index date
-             ELSE 1 -- Naive: Purchase before index date,
+             THEN 0 -- Non-naive: OAC used before index date
+             ELSE 1 -- Naive: only OAC after index date,
         END as is_naive,
         -- Switch to other anticoagulant
         switchto,
@@ -115,4 +115,5 @@ WHERE
   AND same_day = 0
   AND (EXTRACT(YEAR FROM index_date) - year_of_birth) > 18 -- Older than 18 at index date
   AND (condition_index IS NULL OR condition_index < index_date) -- No AF diagnosis or tempindex before index date
+  @whereAdditional
 ;
