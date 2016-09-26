@@ -39,8 +39,11 @@ getCohort <- function(connectionDetails, cdm_schema, target_schema, target_table
   levels(result_df$GENDER_STRING) <- list('Male'=8507,'Female'=8532,'Unknown'=8551)
 
   # Background
+  # Replace NA by 0. Mapping functions do not work on NA
+  result_df$BACKGROUND[is.na(result_df$BACKGROUND)] <- 0
+
   result_df$BACKGROUND_STRING <- as.factor(result_df$BACKGROUND)
-  levels(result_df$BACKGROUND_STRING) <- list('Native'=43021808,'Immigrant'=NA)
+  levels(result_df$BACKGROUND_STRING) <- list('Native'=43021808,'Immigrant'=0)
 
   return(result_df)
 }

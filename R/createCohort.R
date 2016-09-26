@@ -3,6 +3,7 @@
 #' - Excluding the patients who had their first AF after index
 #' - Excluding all the patients with index drug both riva and vka
 #' - Excluding all patients younger than 18 years at index date.
+#' - Optionally: with only the OAC naive patients.
 #' Additional variables are created:
 #' - SWITCHTO = Concept id of anticoagulant switched to after index date, if switched
 #' - SWITCHDATE = Date of switch
