@@ -1,7 +1,7 @@
 -- Cohort for the rivaroxaban treatment group exported from ATLAS.
 -- Drug exposure of Rivaroxaban on or after October 3, 2012
 -- Age Greater or equal to 18
--- Condition occurrence of atrial fibrillation before October 3, 2012
+-- Condition occurrence of atrial fibrillation before index date
 
 CREATE TEMP TABLE Codesets  (
   codeset_id int NOT NULL,
@@ -94,9 +94,9 @@ from
 where co.condition_concept_id in (SELECT concept_id from  Codesets where codeset_id = 1)
 ) C
 
-WHERE C.condition_start_date < TO_DATE(TO_CHAR(2012,'0000')||'-'||TO_CHAR( 10,'00')||'-'||TO_CHAR( 03,'00'), 'YYYY-MM-DD')
 
-) A on A.person_id = P.person_id and A.START_DATE BETWEEN P.OP_START_DATE AND P.OP_END_DATE AND A.START_DATE BETWEEN P.OP_START_DATE and P.OP_END_DATE
+
+) A on A.person_id = P.person_id and A.START_DATE >= P.OP_START_DATE AND A.START_DATE <= P.OP_END_DATE AND A.START_DATE >= P.OP_START_DATE and A.START_DATE <= (P.START_DATE + 0)
 GROUP BY p.event_id
 HAVING COUNT(A.TARGET_CONCEPT_ID) >= 1
 
@@ -160,7 +160,7 @@ DELETE FROM @target_database_schema.@target_cohort_table where cohort_definition
 INSERT INTO @target_database_schema.@target_cohort_table (cohort_definition_id, subject_id, cohort_start_date, cohort_end_date)
 select @target_cohort_id as cohort_definition_id, F.person_id, F.start_date, F.end_date
 FROM (
-  select Q.person_id, Q.start_date, E.end_date, row_number() over (partition by E.person_id order by E.end_date) as ordinal 
+  select Q.person_id, Q.start_date, E.end_date, row_number() over (partition by Q.event_id order by E.end_date) as ordinal 
   from qualified_events Q
   join cohort_ends E on Q.event_id = E.event_id and Q.person_id = E.person_id and E.end_date >= Q.start_date
 ) F
