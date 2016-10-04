@@ -17,12 +17,18 @@ printContinuousDescriptives <- function(x, name = "", ignore_na = TRUE){
 
 #' Calculate and print survival statistics, comparing two groups
 #' All three variables should have the same size
+#' @param days_at_risk   Number of days to event, end of study or other censoring
+#' @param censor         1 if event happened, 0 if event did not happen.
+#' @param grouping       factor with the group to which the data belongs
+#' @param kaplan_ymin    optional. controls the y axis of the kaplan meijer curve.
 printSurvivalStatistics <- function(days_at_risk, censor, grouping, kaplan_ymin = FALSE){
   library(survival)
 
   # Percentage contigency table
-  print("Percentage hazard:")
-  cont_table <- table(censor, grouping)
+  event_string <- as.factor( censor )
+  levels( event_string ) <- list('Event'=0, 'No event'=1)
+  print("Percentage occurrence of event:")
+  cont_table <- table(event_string, grouping)
   cont_table_perc <- prop.table( cont_table, margin=2 ) * 100
   print( cont_table_perc )
 
@@ -33,25 +39,30 @@ printSurvivalStatistics <- function(days_at_risk, censor, grouping, kaplan_ymin 
   group2  <- data.frame(days   = days_at_risk[ grouping == groups[2] ],
                         censor = censor[ grouping == groups[2] ])
 
-  # Annual rate group 1
-  n_deaths1 <- sum(group1$censor == 1)
-  time1 <- max(group1$days) - min(group1$days)
-  rate1 <- n_deaths1/time1 * 365.25
-  printf("'%s' annual death rate: %.3f", groups[1], rate1)
+  # Rate group 1
+  n_events1 <- sum(group1$censor == 1)
+  total_risk_time1 <- sum(group1$days)
+  annual_rate1 <- n_events1/total_risk_time1 *365.25 * 100
+  #time1 <- max(group1$days) - min(group1$days)
+  # Rate group 2
+  n_events2 <- sum(group2$censor == 1)
+  total_risk_time2 <- sum(group2$days)
+  annual_rate2 <- n_events2/total_risk_time2 *365.25 * 100
 
-  # Annual rate group 2
-  n_deaths2 <- sum(group2$censor == 1)
-  time2 <- max(group2$days) - min(group2$days)
-  rate2 <- n_deaths2/time2 * 365.25
-  printf("'%s' annual death rate: %.3f", groups[2], rate2)
+  printf("'%s' - number of events: %d", groups[1], n_events1)
+  printf("'%s' - event rate per 100 years at risk: %.3f", groups[1], annual_rate1)
+  printf("'%s' - number of events: %d", groups[2], n_events2)
+  printf("'%s' - event rate per 100 years at risk: %.3f", groups[2], annual_rate2)
 
   # Apply Proportional Hazards Regression Model
-  # Calculate and report Hazard Ratio
-  survival.object <- Surv(days_at_risk,censor)
+  # Censor = 0 if event did not happen, censor = 1 if event happened
+  survival.object <- Surv(days_at_risk, censor)
   ph.model <- coxph(survival.object ~ grouping)
   ph.summary <- summary(ph.model)
 
-  printf( "Hazard Ratio 95%% CI: %.2f to %.2f", ph.summary$conf.int[3], ph.summary$conf.int[4] )
+  # Report Hazard Ratio
+  printf( "Hazard Ratio: %.3f", ph.summary$conf.int[1] )
+  printf( "Hazard Ratio 95%% CI: %.3f to %.3f", ph.summary$conf.int[3], ph.summary$conf.int[4] )
 
   # Kaplan Meier
   # Create a survival fit
@@ -62,6 +73,7 @@ printSurvivalStatistics <- function(days_at_risk, censor, grouping, kaplan_ymin 
   } else {
     ymin <- round( min(sfit$surv) - (1-min(sfit$surv))*0.20, 2 )
   }
+
   # Plot and add legend
   plot(sfit, mark.time=F, col=c(1,2), lty=1, lwd=2,
        xscale=365.25, xlab="Years from Index date", ymin = ymin,
