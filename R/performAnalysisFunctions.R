@@ -60,6 +60,9 @@ printSurvivalStatistics <- function(days_at_risk, censor, grouping, kaplan_ymin 
   ph.model <- coxph(survival.object ~ grouping)
   ph.summary <- summary(ph.model)
 
+  save(survival.object, file = "survival_object.RData")
+  printf("Stored the survival data object in %s/survival_object.RData", getwd())
+
   # Report Hazard Ratio
   printf( "Hazard Ratio: %.3f", ph.summary$conf.int[1] )
   printf( "Hazard Ratio 95%% CI: %.3f to %.3f", ph.summary$conf.int[3], ph.summary$conf.int[4] )
