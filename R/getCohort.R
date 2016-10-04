@@ -23,7 +23,7 @@ getCohort <- function(connectionDetails, cdm_schema, target_schema, target_table
   ## Translations from index to names
   # Riva or VKA to human readable classifications.
   result_df$INDEX_DRUG_STRING <- as.factor( result_df$INDEX_DRUG )
-  levels( result_df$INDEX_DRUG_STRING ) <- list('Warfarin + Phenprocoumon'=0, 'Rivaroxaban'=1)
+  levels( result_df$INDEX_DRUG_STRING ) <- list('Warfarin'=0, 'Rivaroxaban'=1)
 
   # Naive/non-naive
   result_df$IS_NAIVE_STRING <- as.factor(result_df$IS_NAIVE)
