@@ -2,6 +2,7 @@
 -- Drug exposure of Warfarin or Phenprocoumon on or after October 3, 2012
 -- Age Greater or equal to 18
 -- Condition occurrence of atrial fibrillation before index date
+-- No other anticoagulants before index date
 
 CREATE TEMP TABLE Codesets  (
   codeset_id int NOT NULL,
@@ -36,11 +37,11 @@ UNION  select c.concept_id
 INSERT INTO Codesets (codeset_id, concept_id)
 SELECT 2 as codeset_id, c.concept_id FROM (select distinct I.concept_id FROM
 ( 
-  select concept_id from @cdm_database_schema.CONCEPT where concept_id in (1310149)and invalid_reason is null
+  select concept_id from @cdm_database_schema.CONCEPT where concept_id in (43013024,43013025)and invalid_reason is null
 UNION  select c.concept_id
   from @cdm_database_schema.CONCEPT c
   join @cdm_database_schema.CONCEPT_ANCESTOR ca on c.concept_id = ca.descendant_concept_id
-  and ca.ancestor_concept_id in (1310149)
+  and ca.ancestor_concept_id in (43013024)
   and c.invalid_reason is null
 
 ) I
@@ -48,11 +49,66 @@ UNION  select c.concept_id
 INSERT INTO Codesets (codeset_id, concept_id)
 SELECT 3 as codeset_id, c.concept_id FROM (select distinct I.concept_id FROM
 ( 
-  select concept_id from @cdm_database_schema.CONCEPT where concept_id in (19035344,19081825,19079272,40078200)and invalid_reason is null
+  select concept_id from @cdm_database_schema.CONCEPT where concept_id in (45775372,40228164)and invalid_reason is null
 UNION  select c.concept_id
   from @cdm_database_schema.CONCEPT c
   join @cdm_database_schema.CONCEPT_ANCESTOR ca on c.concept_id = ca.descendant_concept_id
-  and ca.ancestor_concept_id in (19035344,19081825,19079272,40078200)
+  and ca.ancestor_concept_id in (45775372,40228164)
+  and c.invalid_reason is null
+
+) I
+) C;
+INSERT INTO Codesets (codeset_id, concept_id)
+SELECT 4 as codeset_id, c.concept_id FROM (select distinct I.concept_id FROM
+( 
+  select concept_id from @cdm_database_schema.CONCEPT where concept_id in (44782431)and invalid_reason is null
+UNION  select c.concept_id
+  from @cdm_database_schema.CONCEPT c
+  join @cdm_database_schema.CONCEPT_ANCESTOR ca on c.concept_id = ca.descendant_concept_id
+  and ca.ancestor_concept_id in (44782431)
+  and c.invalid_reason is null
+
+) I
+) C;
+INSERT INTO Codesets (codeset_id, concept_id)
+SELECT 5 as codeset_id, c.concept_id FROM (select distinct I.concept_id FROM
+( 
+  select concept_id from @cdm_database_schema.CONCEPT where concept_id in (44783274)and invalid_reason is null
+UNION  select c.concept_id
+  from @cdm_database_schema.CONCEPT c
+  join @cdm_database_schema.CONCEPT_ANCESTOR ca on c.concept_id = ca.descendant_concept_id
+  and ca.ancestor_concept_id in (44783274)
+  and c.invalid_reason is null
+
+) I
+) C;
+INSERT INTO Codesets (codeset_id, concept_id)
+SELECT 6 as codeset_id, c.concept_id FROM (select distinct I.concept_id FROM
+( 
+  select concept_id from @cdm_database_schema.CONCEPT where concept_id in (44804848,4216144,321041,314368,4081039,4313828,4301373)and invalid_reason is null
+UNION  select c.concept_id
+  from @cdm_database_schema.CONCEPT c
+  join @cdm_database_schema.CONCEPT_ANCESTOR ca on c.concept_id = ca.descendant_concept_id
+  and ca.ancestor_concept_id in (44804848,4216144,321041,314368,4081039,4313828,4301373)
+  and c.invalid_reason is null
+
+) I
+) C;
+INSERT INTO Codesets (codeset_id, concept_id)
+SELECT 7 as codeset_id, c.concept_id FROM (select distinct I.concept_id FROM
+( 
+  select concept_id from @cdm_database_schema.CONCEPT where concept_id in (4325649,19035344,19081825,19079272,40078200)and invalid_reason is null
+
+) I
+) C;
+INSERT INTO Codesets (codeset_id, concept_id)
+SELECT 8 as codeset_id, c.concept_id FROM (select distinct I.concept_id FROM
+( 
+  select concept_id from @cdm_database_schema.CONCEPT where concept_id in (1310149)and invalid_reason is null
+UNION  select c.concept_id
+  from @cdm_database_schema.CONCEPT c
+  join @cdm_database_schema.CONCEPT_ANCESTOR ca on c.concept_id = ca.descendant_concept_id
+  and ca.ancestor_concept_id in (1310149)
   and c.invalid_reason is null
 
 ) I
@@ -75,7 +131,7 @@ from
 (
   select de.*, ROW_NUMBER() over (PARTITION BY de.person_id ORDER BY de.drug_exposure_start_date) as ordinal
   FROM @cdm_database_schema.DRUG_EXPOSURE de
-where de.drug_concept_id in (SELECT concept_id from  Codesets where codeset_id = 2)
+where de.drug_concept_id in (SELECT concept_id from  Codesets where codeset_id = 8)
 ) C
 JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id
 WHERE C.drug_exposure_start_date >= TO_DATE(TO_CHAR(2012,'0000')||'-'||TO_CHAR( 10,'00')||'-'||TO_CHAR( 03,'00'), 'YYYY-MM-DD')
@@ -87,7 +143,7 @@ from
 (
   select de.*, ROW_NUMBER() over (PARTITION BY de.person_id ORDER BY de.drug_exposure_start_date) as ordinal
   FROM @cdm_database_schema.DRUG_EXPOSURE de
-where de.drug_concept_id in (SELECT concept_id from  Codesets where codeset_id = 3)
+where de.drug_concept_id in (SELECT concept_id from  Codesets where codeset_id = 7)
 ) C
 JOIN @cdm_database_schema.PERSON P on C.person_id = P.person_id
 WHERE C.drug_exposure_start_date >= TO_DATE(TO_CHAR(2012,'0000')||'-'||TO_CHAR( 10,'00')||'-'||TO_CHAR( 03,'00'), 'YYYY-MM-DD')
@@ -118,8 +174,39 @@ FROM
 (
   select event_id FROM
   (
+    
+  ) CQ
+  GROUP BY event_id
+  HAVING COUNT(index_id) = 0
+) G
+) AC on AC.event_id = pe.event_id
+
+) QE
+
+;
+
+
+CREATE TEMP TABLE inclusionRuleCohorts 
+ (
+  inclusion_rule_id bigint,
+  event_id bigint
+)
+;
+INSERT INTO inclusionRuleCohorts (inclusion_rule_id, event_id)
+select 0 as inclusion_rule_id, event_id
+FROM 
+(
+  select pe.event_id
+  FROM qualified_events pe
+  
+JOIN (
+select 0 as index_id, event_id
+FROM
+(
+  select event_id FROM
+  (
     SELECT 0 as index_id, p.event_id
-FROM primary_events P
+FROM qualified_events P
 LEFT JOIN
 (
   select C.person_id, C.condition_start_date as start_date, COALESCE(C.condition_end_date, (C.condition_start_date + 1)) as end_date, C.CONDITION_CONCEPT_ID as TARGET_CONCEPT_ID
@@ -142,17 +229,87 @@ HAVING COUNT(A.TARGET_CONCEPT_ID) >= 1
   HAVING COUNT(index_id) = 1
 ) G
 ) AC on AC.event_id = pe.event_id
-
-) QE
-
+) Results
 ;
 
+INSERT INTO inclusionRuleCohorts (inclusion_rule_id, event_id)
+select 1 as inclusion_rule_id, event_id
+FROM 
+(
+  select pe.event_id
+  FROM qualified_events pe
+  
+JOIN (
+select 0 as index_id, event_id
+FROM
+(
+  select event_id FROM
+  (
+    SELECT 0 as index_id, p.event_id
+FROM qualified_events P
+LEFT JOIN
+(
+  select C.person_id, C.drug_exposure_start_date as start_date, COALESCE(C.drug_exposure_end_date, ( C.drug_exposure_start_date +  1)) as end_date, C.drug_concept_id as TARGET_CONCEPT_ID
+from 
+(
+  select de.*, ROW_NUMBER() over (PARTITION BY de.person_id ORDER BY de.drug_exposure_start_date) as ordinal
+  FROM @cdm_database_schema.DRUG_EXPOSURE de
+where de.drug_concept_id in (SELECT concept_id from  Codesets where codeset_id = 2)
+) C
 
-CREATE TEMP TABLE inclusionRuleCohorts 
- (
-  inclusion_rule_id bigint,
-  event_id bigint
-)
+
+
+) A on A.person_id = P.person_id and A.START_DATE >= P.OP_START_DATE AND A.START_DATE <= P.OP_END_DATE AND A.START_DATE >= P.OP_START_DATE and A.START_DATE <= (P.START_DATE + 0)
+GROUP BY p.event_id
+HAVING COUNT(A.TARGET_CONCEPT_ID) <= 0
+
+
+UNION
+SELECT 1 as index_id, p.event_id
+FROM qualified_events P
+LEFT JOIN
+(
+  select C.person_id, C.drug_exposure_start_date as start_date, COALESCE(C.drug_exposure_end_date, ( C.drug_exposure_start_date +  1)) as end_date, C.drug_concept_id as TARGET_CONCEPT_ID
+from 
+(
+  select de.*, ROW_NUMBER() over (PARTITION BY de.person_id ORDER BY de.drug_exposure_start_date) as ordinal
+  FROM @cdm_database_schema.DRUG_EXPOSURE de
+where de.drug_concept_id in (SELECT concept_id from  Codesets where codeset_id = 3)
+) C
+
+
+
+) A on A.person_id = P.person_id and A.START_DATE >= P.OP_START_DATE AND A.START_DATE <= P.OP_END_DATE AND A.START_DATE >= P.OP_START_DATE and A.START_DATE <= (P.START_DATE + 0)
+GROUP BY p.event_id
+HAVING COUNT(A.TARGET_CONCEPT_ID) <= 0
+
+
+UNION
+SELECT 2 as index_id, p.event_id
+FROM qualified_events P
+LEFT JOIN
+(
+  select C.person_id, C.drug_exposure_start_date as start_date, COALESCE(C.drug_exposure_end_date, ( C.drug_exposure_start_date +  1)) as end_date, C.drug_concept_id as TARGET_CONCEPT_ID
+from 
+(
+  select de.*, ROW_NUMBER() over (PARTITION BY de.person_id ORDER BY de.drug_exposure_start_date) as ordinal
+  FROM @cdm_database_schema.DRUG_EXPOSURE de
+where de.drug_concept_id in (SELECT concept_id from  Codesets where codeset_id = 0)
+) C
+
+
+
+) A on A.person_id = P.person_id and A.START_DATE >= P.OP_START_DATE AND A.START_DATE <= P.OP_END_DATE AND A.START_DATE >= P.OP_START_DATE and A.START_DATE <= (P.START_DATE + 0)
+GROUP BY p.event_id
+HAVING COUNT(A.TARGET_CONCEPT_ID) <= 0
+
+
+  ) CQ
+  GROUP BY event_id
+  HAVING COUNT(index_id) = 3
+) G
+) AC on AC.event_id = pe.event_id
+) Results
 ;
 
 
@@ -169,6 +326,9 @@ WITH  cteIncludedEvents(event_id, person_id, start_date, end_date, op_start_date
     LEFT JOIN inclusionRuleCohorts I on I.event_id = Q.event_id
     GROUP BY Q.event_id, Q.person_id, Q.start_date, Q.end_date, Q.op_start_date, Q.op_end_date
   ) MG -- matching groups
+
+  -- the matching group with all bits set ( POWER(2,# of inclusion rules) - 1 = inclusion_rule_mask
+  WHERE (MG.inclusion_rule_mask = POWER(cast(2 as bigint),2)-1)
 
 )
  SELECT
