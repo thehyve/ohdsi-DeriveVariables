@@ -168,19 +168,6 @@ FROM
   select pe.event_id, pe.person_id, pe.start_date, pe.end_date, pe.op_start_date, pe.op_end_date, row_number() over (partition by pe.person_id order by pe.start_date ASC) as ordinal
   FROM primary_events pe
   
-JOIN (
-select 0 as index_id, event_id
-FROM
-(
-  select event_id FROM
-  (
-    
-  ) CQ
-  GROUP BY event_id
-  HAVING COUNT(index_id) = 0
-) G
-) AC on AC.event_id = pe.event_id
-
 ) QE
 
 ;
