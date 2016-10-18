@@ -15,9 +15,9 @@ LEFT JOIN (
 
 -- Add background
 LEFT JOIN (
-    SELECT person_id, MAX(value_as_concept_id) as background
+    SELECT person_id, MAX(observation_concept_id) as background
     FROM @cdm_schema.observation
-    WHERE observation.observation_concept_id = 4136468
+    WHERE observation.observation_concept_id = 4058588 OR observation.observation_concept_id = 43021808
     GROUP BY person_id
 ) background
     ON cohort.person_id = background.person_id
