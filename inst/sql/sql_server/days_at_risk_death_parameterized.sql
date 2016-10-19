@@ -2,7 +2,7 @@ SELECT  cohort.person_id,
         -- Days from index+30 to death
         CASE WHEN cause_concept_id IS NOT NULL
              THEN death_date - index_date - @days_correction
-             ELSE to_date(@study_end_date::varchar,'yyyymmdd') - index_date
+             ELSE to_date(@study_end_date::varchar,'yyyymmdd') - index_date - @days_correction
         END AS days_at_risk,
         cause_concept_id,
         CASE WHEN cause_concept_id IS NOT NULL
@@ -21,7 +21,7 @@ FROM (
         ON  observation_concept_id = 4083743 -- Cause of Death
         AND death.person_id = death_causes.person_id
         AND death.death_date = death_causes.observation_date
-    WHERE death_date > index_date AND @where_clause
+    WHERE death_date > index_date AND death_date < to_date(@study_end_date::varchar,'yyyymmdd') AND @where_clause
     GROUP BY cohort.person_id -- Groups all the secondary causes of death
 ) temp
 RIGHT JOIN @target_schema.@target_table cohort
