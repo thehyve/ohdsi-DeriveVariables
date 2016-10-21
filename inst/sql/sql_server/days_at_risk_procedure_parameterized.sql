@@ -16,7 +16,7 @@ FROM (
     FROM @target_schema.@target_table cohort
     LEFT JOIN @cdm_schema.procedure_occurrence AS procedure
         ON cohort.person_id = procedure.person_id
-    WHERE procedure_date > index_date AND death_date < to_date(@study_end_date::varchar,'yyyymmdd')
+    WHERE procedure_date > index_date AND procedure_date < to_date(@study_end_date::varchar,'yyyymmdd')
         AND @where_clause
     GROUP BY cohort.person_id -- Groups all the secondary causes of death
 ) temp

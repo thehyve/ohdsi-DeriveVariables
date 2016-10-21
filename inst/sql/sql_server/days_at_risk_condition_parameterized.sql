@@ -16,7 +16,7 @@ FROM (
     FROM @target_schema.@target_table cohort
     LEFT JOIN @cdm_schema.condition_occurrence AS condition
         ON cohort.person_id = condition.person_id
-    WHERE condition_start_date > index_date AND death_date < to_date(@study_end_date::varchar,'yyyymmdd')
+    WHERE condition_start_date > index_date AND condition_start_date < to_date(@study_end_date::varchar,'yyyymmdd')
         AND @where_clause
         -- Not a Secondary condition (Primary and first place condition are allowed)
         AND condition_type_concept_id != 44786629
