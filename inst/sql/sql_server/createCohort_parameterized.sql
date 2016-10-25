@@ -81,14 +81,15 @@ WITH condition_start AS (
         FROM (
             SELECT person_id, MIN(drug_exposure_start_date) as switchDate
             FROM oac_history
-            WHERE drug_exposure_start_date > index_date
+            WHERE drug_exposure_start_date > index_date AND drug_exposure_start_date <= DATE '@study_end_date'
                   -- Not the same drug as index drug
                   AND NOT ( (drug_concept_id IN (@riva_ids) AND index_drug = 1)
                          OR (drug_concept_id IN (@warf_ids) AND index_drug = 0)
                           )
             GROUP BY person_id
-        ) A JOIN oac_history B
-                ON A.person_id = B.person_id AND A.switchDate = B.drug_exposure_start_date
+        ) A
+        JOIN oac_history B
+            ON A.person_id = B.person_id AND A.switchDate = B.drug_exposure_start_date
 )
 -- If multiple lines for one person, select just one. Happens e.g. when multiple switches on the same date.
 SELECT  DISTINCT ON (cohort.person_id)
