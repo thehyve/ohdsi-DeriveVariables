@@ -30,10 +30,13 @@ getCohort <- function(connectionDetails, cdm_schema, target_schema, target_table
   levels(result_df$IS_NAIVE_STRING) <- list('Non-naive'=0,'OAC Naive'=1)
 
   # TODO: translate by join to concept table (concept_name)
-  # Switchto #todo: expande with other ids that can be used for these.
+  # Switchto. Only translation of concepts that are present in the Swedish dataset
   result_df$SWITCHTO_STRING <- as.factor(result_df$SWITCHTO)
-  levels( result_df$SWITCHTO_STRING ) <- list("Warfarin"=1310149,"Phenprocoumon"=19035344,"Dabigatran"=40228152,
-                                              "Rivaroxaban"=40241331,"Apixaban"=43013024)
+  levels( result_df$SWITCHTO_STRING ) <- list("Warfarin"=1310149,"Warfarin"=40163534,"Warfarin"=40093132, #Ing, 2.5, tablet
+                                              "Phenprocoumon"=19035344,"Phenprocoumon"=19079272,"Phenprocoumon"=40078200, #Ing, 3, tablet
+                                              "Dabigatran"=40228152,"Dabigatran"=40228160,"Dabigatran"=40228153, #Ing, 150, 75
+                                              "Rivaroxaban"=40241331,"Rivaroxaban"=40244448,"Rivaroxaban"=40244444,"Rivaroxaban"=40241333,"Rivaroxaban"=40241336, #Ing, 20, 15, 10, tablet
+                                              "Apixaban"=43013024,"Apixaban"=43013030,"Apixaban"=43013026,"Apixaban"=43013033) #Ing, 5, 2.5, tablet
   # Gender
   result_df$GENDER_STRING <- as.factor(result_df$GENDER_CONCEPT_ID)
   levels(result_df$GENDER_STRING) <- list('Male'=8507,'Female'=8532,'Unknown'=8551)
