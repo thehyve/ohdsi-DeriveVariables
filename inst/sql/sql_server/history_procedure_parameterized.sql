@@ -5,8 +5,9 @@
 SELECT person_id, MAX(procedure_bool) as concept_history
 FROM (
     SELECT cohort.person_id,
-        CASE WHEN procedure_concept_id in (@concept_ids)
-                  AND procedure_date < index_date
+        CASE WHEN procedure_concept_id in (@concept_ids) AND
+                  procedure_date >= cohort.index_date - INTERVAL '@days_before_index days' AND
+                  procedure_date <= cohort.index_date + INTERVAL '@days_after_index days'
              THEN 1
              ELSE 0
         END as procedure_bool

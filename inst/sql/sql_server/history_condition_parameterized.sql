@@ -5,8 +5,9 @@
 SELECT person_id, MAX(condition) as concept_history
 FROM (
     SELECT cohort.person_id,
-        CASE WHEN condition_concept_id in (@concept_ids)
-                  AND condition_start_date < index_date
+        CASE WHEN condition_concept_id in (@concept_ids) AND
+                  condition_start_date >= cohort.index_date - INTERVAL '@days_before_index days' AND
+                  condition_start_date <= cohort.index_date + INTERVAL '@days_after_index days'
              THEN 1
              ELSE 0
         END as condition

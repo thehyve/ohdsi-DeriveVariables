@@ -6,7 +6,8 @@ SELECT person_id, MAX(drug) as concept_history
 FROM (
     SELECT cohort.person_id,
         CASE WHEN @concept_ids AND
-                  drug_exposure_start_date < cohort.index_date
+                  drug_exposure_start_date >= cohort.index_date - INTERVAL '@days_before_index days' AND
+                  drug_exposure_start_date <= cohort.index_date + INTERVAL '@days_after_index days'
              THEN 1
              ELSE 0
         END as drug

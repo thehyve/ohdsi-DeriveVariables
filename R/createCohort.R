@@ -1,5 +1,5 @@
 #' createCohort() will create a cohort from the following rules:
-#' - All patients with rivaroxaban (riva), warfarin or phenprocoumon (vka) between december 1, 2011 and december 31, 2014.
+#' - All patients with exposure to rivaroxaban or warfarin between (and including) october 3, 2012 and december 31, 2014.
 #' - Excluding the patients who had their first AF after index
 #' - Excluding all the patients with index drug both riva and vka
 #' - Excluding all patients younger than 18 years at index date.
